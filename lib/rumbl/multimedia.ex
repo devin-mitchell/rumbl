@@ -1,5 +1,6 @@
 defmodule Rumbl.Multimedia do
   alias Rumbl.Accounts
+  alias Rumbl.Multimedia.Category
 
   @moduledoc """
   The Multimedia context.
@@ -126,5 +127,10 @@ defmodule Rumbl.Multimedia do
 
   defp user_videos_query(query, %Accounts.User{id: user_id}) do
     from(v in query, where: v.user_id == ^user_id)
+  end
+
+  # CATEGORIES
+  def create_category!(name) do
+    Repo.insert!(%Category{name: name}, on_conflict: :nothing)
   end
 end

@@ -6,10 +6,13 @@ defmodule RumblWeb.VideoChannel do
     {:ok, socket}
   end
 
-  def handle_info(:ping, socket) do
-    count = socket.assigns[:count] || 1
-    push(socket, "ping", %{count: count})
+  def handle_in("new_annotation", params, socket) do
+    broadcast!(socket, "new_annotation", %{
+      user: %{username: "anon"},
+      body: params["body"],
+      at: params["at"]
+    })
 
-    {:noreply, assign(socket, :count, count + 1)}
+    {:reply, :ok, socket}
   end
 end

@@ -21,12 +21,44 @@ let Video = {
     const postButton = document.getElementById("msg-submit");
     const vidChannel = socket.channel("videos:" + videoId);
 
-    vidChannel.on("ping", ({ count }) => console.log("PING: ", count));
+    postButton.addEventListener("click", () => {
+      const payload = { body: msgInput.value, at: Player.getCurrentTime() };
+
+      vidChannel
+        .push("new_annotation", payload)
+        .receive("error", (e) => console.log(e));
+
+      msgInput.value = "";
+    });
+
+    vidChannel.on("new_annotation", (resp) => {
+      this.renderAnnotation(msgContainer, resp);
+    });
 
     vidChannel
       .join()
       .receive("ok", (resp) => console.log("joined the video channel", resp))
       .receive("error", (reason) => console.log("join failed", reason));
+  },
+
+  esc(str) {
+    const div = document.createElement("div");
+    div.appendChild(document.createTextNode(str));
+
+    return div.innerHTML;
+  },
+
+  renderAnnotation(msgContainer, { user, body, at }) {
+    const template = document.createElement("div");
+
+    template.innerHTML = `
+      <a href="#" data-seek="${this.esc(at)}">
+        <b>${this.esc(user.username)}</b>: ${this.esc(body)}
+      </a>
+    `;
+
+    msgContainer.appendChild(template);
+    msgContainer.scrollTop = msgContainer.scrollHeight;
   },
 };
 

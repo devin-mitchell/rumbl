@@ -35,9 +35,25 @@ let Video = {
       this.renderAnnotation(msgContainer, resp);
     });
 
+    msgContainer.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      const seconds =
+        e.target.getAttribute("data-seek") ||
+        e.target.parentNode.getAttribute("data-seek");
+
+      if (!seconds) {
+        return;
+      }
+
+      Player.seekTo(seconds);
+    });
+
     vidChannel
       .join()
-      .receive("ok", (resp) => console.log("joined the video channel", resp))
+      .receive("ok", (resp) =>
+        this.scheduleMessages(msgContainer, resp.annotations)
+      )
       .receive("error", (reason) => console.log("join failed", reason));
   },
 
@@ -53,12 +69,45 @@ let Video = {
 
     template.innerHTML = `
       <a href="#" data-seek="${this.esc(at)}">
+        [${this.formatTime(at)}]
         <b>${this.esc(user.username)}</b>: ${this.esc(body)}
       </a>
     `;
 
     msgContainer.appendChild(template);
     msgContainer.scrollTop = msgContainer.scrollHeight;
+  },
+
+  scheduleMessages(msgContainer, annotations) {
+    clearTimeout(this.scheduleTimer);
+    this.scheduleTimer = setTimeout(() => {
+      const currentTime = Player.getCurrentTime();
+      const remaining = this.renderAtTime(
+        annotations,
+        currentTime,
+        msgContainer
+      );
+
+      this.scheduleMessages(msgContainer, remaining);
+    }, 1000);
+  },
+
+  renderAtTime(annotations, seconds, msgContainer) {
+    return annotations.filter((annotation) => {
+      if (annotation.at > seconds) {
+        return true;
+      } else {
+        this.renderAnnotation(msgContainer, annotation);
+        return false;
+      }
+    });
+  },
+
+  formatTime(at) {
+    const date = new Date(null);
+    date.setSeconds(at / 1000);
+
+    return date.toISOString().substring(14, 19);
   },
 };
 
